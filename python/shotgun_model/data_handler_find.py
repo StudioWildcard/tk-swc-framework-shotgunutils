@@ -17,6 +17,13 @@ import sgtk
 from collections import defaultdict
 import os
 
+from sgtk.platform.qt import QtCore
+for name, cls in QtCore.__dict__.items():
+    if isinstance(cls, type): globals()[name] = cls
+
+from sgtk.platform.qt import QtGui
+for name, cls in QtGui.__dict__.items():
+    if isinstance(cls, type): globals()[name] = cls
 
 class ShotgunFindDataHandler(ShotgunDataHandler):
     """
@@ -424,9 +431,11 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
             for key in item_path_dict:
                 if key:
                     # self._log_debug(">>>>>>>>>>  key is: {}".format(key))
-                    key = "{}\\...".format(key)
+                    #key = "{}\\...".format(key)
+                    key = key.rstrip('/')
                     # self._log_debug("^^^ key is: {}".format(key))
-                    fstat_list = self._p4.run("fstat", key)
+                    fstat_list = self._p4.run_fstat('-Of', key + '/...')
+                    # fstat_list = self._p4.run("fstat", key)
                     for i, fstat in enumerate(fstat_list):
                         client_file = fstat.get('clientFile', None)
                         # if i == 0:
@@ -434,16 +443,17 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                         if client_file:
                             have_rev = fstat.get('haveRev', "0")
                             head_rev = fstat.get('headRev', "0")
-                            modified_client_file = self._create_key(client_file)
-                            if modified_client_file not in fstat_dict:
+                            key = self._create_key(client_file)
+                            key = "{}#{}".format(key, head_rev)
+                            if key not in fstat_dict:
 
-                                fstat_dict[modified_client_file] = fstat
-                                fstat_dict[modified_client_file]['Published'] = False
+                                fstat_dict[key] = fstat
+                                fstat_dict[key]['Published'] = False
                                 action = fstat.get('action', None)
                                 if action:
                                     sg_status = self._get_p4_status(action)
                                     if sg_status:
-                                        fstat_dict[modified_client_file]['sg_status_list'] = sg_status
+                                        fstat_dict[key]['sg_status_list'] = sg_status
 
                                 # if i == 0:
                                 #     self._log_debug(">>>>>>>>>>  fstat_dict[client_file] is: {}".format(fstat_dict[modified_client_file]))
@@ -454,28 +464,96 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                 if sg_item_path:
                     local_path = sg_item_path.get("local_path", None)
                     if local_path:
-                        modified_local_path = self._create_key(local_path)
+                        key = self._create_key(local_path)
+                        version_number = sg_item.get("version_number", None)
+                        # Get the version number from the path if it exists
+                        if version_number:
+                            version_number = int(version_number)
+                            key = "{}#{}".format(key, version_number)
 
-                        if modified_local_path and modified_local_path in fstat_dict:
+                            if key and key in fstat_dict:
 
-                            have_rev = fstat_dict[modified_local_path].get('haveRev', "0")
-                            head_rev = fstat_dict[modified_local_path].get('headRev', "0")
-                            fstat_dict[modified_local_path]['Published'] = True
+                                have_rev = fstat_dict[key].get('haveRev', "0")
+                                head_rev = fstat_dict[key].get('headRev', "0")
+                                fstat_dict[key]['Published'] = True
 
-                            sg_item["haveRev"], sg_item["headRev"] = have_rev, head_rev
-                            sg_item["revision"] = "{}/{}".format(have_rev, head_rev)
-                            sg_item["headAction"] = fstat_dict[modified_local_path].get('headAction', None)
-                            sg_item["action"] = fstat_dict[modified_local_path].get('action', None)
-                            sg_item["depotFile"] = fstat_dict[modified_local_path].get('depotFile', None)
-                            sg_item["sg_status_list"] = fstat_dict[modified_local_path].get('sg_status_list', None)
-                            sg_item["headModTime"] = fstat_dict[modified_local_path].get('headModTime', None)
-                            sg_item["actionOwner"] = fstat_dict[modified_local_path].get('actionOwner', None)
-                            sg_item["headTime"] = fstat_dict[modified_local_path].get('headTime', None)
-                            sg_item["sg_p4_user"] = fstat_dict[modified_local_path].get('sg_p4_user', None)
-                            #sg_item["newAction"] = sg_item["headAction"]
-                            # sg_item["newAction"] = None
-                            #if sg_item.get("version_number", 0) == 0:
-                            #    sg_item["version_number"] = int(head_rev)
+                                sg_item["haveRev"], sg_item["headRev"] = have_rev, head_rev
+                                sg_item["revision"] = "{}/{}".format(have_rev, head_rev)
+                                sg_item["headAction"] = fstat_dict[key].get('headAction', None)
+                                sg_item["action"] = fstat_dict[key].get('action', None)
+                                sg_item["depotFile"] = fstat_dict[key].get('depotFile', None)
+                                sg_item["sg_status_list"] = fstat_dict[key].get('sg_status_list', None)
+                                sg_item["headModTime"] = fstat_dict[key].get('headModTime', None)
+                                sg_item["actionOwner"] = fstat_dict[key].get('actionOwner', None)
+                                sg_item["headTime"] = fstat_dict[key].get('headTime', None)
+                                sg_item["sg_p4_user"] = fstat_dict[key].get('sg_p4_user', None)
+                                #sg_item["newAction"] = sg_item["headAction"]
+                                # sg_item["newAction"] = None
+                                #if sg_item.get("version_number", 0) == 0:
+                                #    sg_item["version_number"] = int(head_rev)
+            """
+            self._log_debug(">>>>>>>>>>fstat_dict:")
+            for key, value in fstat_dict.items():
+                self._log_debug(">>>>>>>>>> key: {}, value: {}".format(key, value))
+            self._log_debug(">>>>>>>>>>sg_data:")
+            """
+
+
+            repo_root = os.path.normpath(
+                os.path.join(os.path.dirname(__file__), "..", "..")
+            )
+            self._log_debug(">>>>>>>>>> repo_root: {}".format(repo_root))
+            perforce_publish_image_path = os.path.join(repo_root, "icons/perforce_1.png")
+            self._log_debug(">>>>>>>>>> perforce_publish_image_path: {}".format(perforce_publish_image_path))
+            perforce_publish_icon = QIcon(QPixmap(perforce_publish_image_path))
+
+            id = 9999000
+            for key, fstat in fstat_dict.items():
+                if not fstat.get('Published', False):
+                    new_sg_item = fstat
+                    new_sg_item["Published"] = True
+                    new_sg_item["source"] = "Perforce"
+                    # new_sg_item["type"] = "Perforce"
+                    new_sg_item["type"] = "Asset"
+                    # new_sg_item["type"] = "depotFile"
+                    new_sg_item["sg_status_list"] = "Needs Publishing"
+                    new_sg_item["entity"] = {'id': 14456, 'name': 'BigPalm_SM_Jackson', 'type': 'Asset'}
+                    id += 1
+                    new_sg_item["id"] = id
+
+                    new_sg_item["path"] = {"local_path": fstat.get('clientFile', None)}
+                    # new_sg_item["path"] = {"local_path": fstat.get('depotFile', None)}
+                    file_base_name = os.path.basename(fstat.get('clientFile', None))
+                    new_sg_item["name"] = file_base_name
+                    head_rev = fstat.get('headRev', "0")
+                    have_rev = fstat.get('haveRev', "0")
+                    new_sg_item["revision"] = "{}/{}".format(have_rev, head_rev)
+                    #new_sg_item["version_number"] = int(head_rev)
+                    new_sg_item["code"] = "{}#{}".format(file_base_name, head_rev)
+                    file_type_name = self._get_publish_type(file_base_name)
+                    new_sg_item["file_type_name"] = file_type_name
+                    id += 1
+                    #new_sg_item["published_file_type"] = {'id': id, 'name': file_type_name,'type': 'PublishedFileType'}
+
+                    new_sg_item["description"] = fstat.get('desc', None)
+                    new_sg_item["created_at"] = fstat.get('headTime', None)
+                    #new_sg_item["project"] = self._entity.get("project", None) if self._entity else None
+                    #new_sg_item["task"] = self._entity.get("task", None) if self._entity else None
+                    new_sg_item["sg_p4_depo_path"] = fstat.get('depotFile', None)
+
+                    new_sg_item["image"] = perforce_publish_image_path
+
+                    # self._log_debug(">>>>>>>>>> new_sg_item: {}".format(new_sg_item))
+                    sg_data.append(new_sg_item)
+            """
+            self._log_debug(">>>>>>>>>> sg_data: ")
+            for i, sg_item in enumerate(sg_data):
+                for key, value in sg_item.items():
+                    self._log_debug(">>> {}: {}".format(key, value))
+            """
+
+
+
 
         return sg_data
 
