@@ -541,7 +541,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                     #new_sg_item["task"] = self._entity.get("task", None) if self._entity else None
                     new_sg_item["sg_p4_depo_path"] = fstat.get('depotFile', None)
 
-                    new_sg_item["image"] = perforce_publish_image_path
+                    new_sg_item["image"] = self.get_perforce_image()
 
                     # self._log_debug(">>>>>>>>>> new_sg_item: {}".format(new_sg_item))
                     sg_data.append(new_sg_item)
@@ -582,6 +582,9 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
         except:
             return None, None
 
+    def get_perforce_image(self):
+        img = "https://sg-media-usor-01.s3-accelerate.amazonaws.com/40340ec70ef011c71c9f7a45c41efa8a9a477c61/1569a65a2b157f3ebadac901febefa06ad36eae4/perforce_4.v1.png?response-content-disposition=filename%3D%22perforce_4.v1.png%22&x-amz-meta-user-id=2299&x-amz-meta-user-type=HumanUser&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYJG6Z4JIZED5WIS5%2F20250224%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250224T174650Z&X-Amz-SignedHeaders=host&X-Amz-Expires=900&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEPr%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIDfM%2BphumYao0aZsRC0xT4MLGgPXSN1Qgu32CLmv%2B%2FskAiEA4r3qPquOy%2FPD53laUUzGXb1obVjwXhz2FW0VlEbSssIqmAIIMxAAGgw1Njk1NTA0MzA4MDEiDCXnX5kZyyOel3Q%2Bpir1AV35Xrf8Wu46fPGy6KFshGlHhFdSq%2F9J%2F3EFhy2X1jXNY%2B3PAG0nNvDwo2kirVIWsy%2FKlbtVxZKPJFTTRBv8QdkDK%2Bc5BM6oqG36BS5u%2F8h2kn7YILHLGKwZlrnTKhsYB7GahcgMcBRfs1u4uZvhWgPASPp3PwfWisn8V51kDMfFt9MQP96xQ550t8k0zg%2BzaYOlpqFp0h9s0MYnOtWgqygOtP6Wg7jLWWpghz6B%2FuPhela4cu%2Bc%2BJh0J0suHx9swSZU0OBNy1wIbaWgg1JUCB0M7K2RbD4O9ErMQGC%2Bt%2BLaKz2VmX%2FW%2FmvcUdgdC1S6oZ3MzBWuML7c8r0GOp0B2Fw8wvzGr%2Fi4R6SFEZBDHR9fM4ICDO0F6KzOsQCGF14u5hdOhJ9lySnNa%2F3U2m1Fq1Q%2BMMreF2mL%2Fiy8JmckPXouUSGQVaukZ8wMKxQ1bB6BfSLA8%2FfI3nFGtyvIF3cFs8UnM8GVu3A7StyjkgIldh64vPkcV47qOxcyRvd1JySEwUKKptKLNOPIpu%2BGH2aStBUpeRYlIvFTfmHxBA%3D%3D&X-Amz-Signature=6d497476ad12670be9ef10907606d13d628553511535f2285604a793ca307d30"
+        return img
     def _get_publish_type(self, publish_path):
         """
         Get a publish type
