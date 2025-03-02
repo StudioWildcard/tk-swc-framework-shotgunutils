@@ -511,7 +511,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
             for key, fstat in fstat_dict.items():
                 if not fstat.get('Published', False):
                     new_sg_item = fstat
-                    new_sg_item["Published"] = True
+                    # new_sg_item["Published"] = True
                     new_sg_item["source"] = "Perforce"
                     # new_sg_item["type"] = "Perforce"
                     new_sg_item["type"] = "Asset"
@@ -541,7 +541,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                     #new_sg_item["task"] = self._entity.get("task", None) if self._entity else None
                     new_sg_item["sg_p4_depo_path"] = fstat.get('depotFile', None)
 
-                    new_sg_item["image"] = self.get_perforce_image()
+                    #new_sg_item["image"] = self.get_perforce_image()
 
                     # self._log_debug(">>>>>>>>>> new_sg_item: {}".format(new_sg_item))
                     sg_data.append(new_sg_item)
