@@ -97,6 +97,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
             "hrox": "NukeStudio Project",
             "hip": "Houdini Scene",
             "hipnc": "Houdini Scene",
+            "hiplc": "Houdini Scene",
             "ma": "Maya Scene",
             "mb": "Maya Scene",
             "fbx": "Motion Builder FBX",
@@ -491,12 +492,32 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                                 # sg_item["newAction"] = None
                                 #if sg_item.get("version_number", 0) == 0:
                                 #    sg_item["version_number"] = int(head_rev)
-            """
+
+            query = "Helena_LC_BangsReduced_TEK"
+            self._log_debug("------------------------------------------------------------------------------------")
+            for i, sg_item in enumerate(sg_data):
+                sg_item_path = sg_item.get("path", None)
+                local_path = sg_item_path.get("local_path", None)
+
+                if query in local_path:
+                    self._log_debug("-------------------------------")
+                    self._log_debug("Found query: {} in local_path: {}".format(query, local_path))
+                    for key, value in sg_item.items():
+                        self._log_debug(">>> {}: {}".format(key, value))
+
+                else:
+                    # self._log_debug("could not find query: {} in local_path: {}".format(query, local_path))
+                    continue
+            self._log_debug("------------------------------------------------------------------------------------")
             self._log_debug(">>>>>>>>>>fstat_dict:")
-            for key, value in fstat_dict.items():
-                self._log_debug(">>>>>>>>>> key: {}, value: {}".format(key, value))
-            self._log_debug(">>>>>>>>>>sg_data:")
-            """
+            for k, fstat in fstat_dict.items():
+                depot_file = fstat_dict[k].get('depotFile', None)
+                if query in depot_file:
+                    self._log_debug("Found query: {} in depot_file: {}".format(query, depot_file))
+                    self._log_debug(">>> {}: {}".format(k, fstat))
+                    self._log_debug(">>>>>>>>>>fstat ")
+                    for key, value in fstat.items():
+                        self._log_debug(">>> {}: {}".format(key, value))
 
 
             repo_root = os.path.normpath(
@@ -508,49 +529,85 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
             perforce_publish_icon = QIcon(QPixmap(perforce_publish_image_path))
 
             id = 9999000
+
+            # Step 1: Find the highest headRev for each unique file
+            highest_revs = {}
             for key, fstat in fstat_dict.items():
-                if not fstat.get('Published', False):
-                    new_sg_item = fstat
-                    # new_sg_item["Published"] = True
-                    new_sg_item["source"] = "Perforce"
-                    # new_sg_item["type"] = "Perforce"
-                    new_sg_item["type"] = "Asset"
-                    # new_sg_item["type"] = "depotFile"
-                    new_sg_item["sg_status_list"] = "Needs Publishing"
-                    new_sg_item["entity"] = {'id': 14456, 'name': 'BigPalm_SM_Jackson', 'type': 'Asset'}
-                    id += 1
-                    new_sg_item["id"] = id
+                depot_file = fstat.get("depotFile", "")
+                head_rev = int(fstat.get("headRev", 0))
 
-                    new_sg_item["path"] = {"local_path": fstat.get('clientFile', None)}
-                    # new_sg_item["path"] = {"local_path": fstat.get('depotFile', None)}
-                    file_base_name = os.path.basename(fstat.get('clientFile', None))
-                    new_sg_item["name"] = file_base_name
-                    head_rev = fstat.get('headRev', "0")
-                    have_rev = fstat.get('haveRev', "0")
-                    new_sg_item["revision"] = "{}/{}".format(have_rev, head_rev)
-                    #new_sg_item["version_number"] = int(head_rev)
-                    new_sg_item["code"] = "{}#{}".format(file_base_name, head_rev)
-                    file_type_name = self._get_publish_type(file_base_name)
-                    new_sg_item["file_type_name"] = file_type_name
-                    id += 1
-                    #new_sg_item["published_file_type"] = {'id': id, 'name': file_type_name,'type': 'PublishedFileType'}
+                if depot_file:
+                    if depot_file not in highest_revs or head_rev > highest_revs[depot_file]:
+                        highest_revs[depot_file] = head_rev
 
-                    new_sg_item["description"] = fstat.get('desc', None)
-                    new_sg_item["created_at"] = fstat.get('headTime', None)
-                    #new_sg_item["project"] = self._entity.get("project", None) if self._entity else None
-                    #new_sg_item["task"] = self._entity.get("task", None) if self._entity else None
-                    new_sg_item["sg_p4_depo_path"] = fstat.get('depotFile', None)
+            # Step 2: Process only the highest revision files
 
-                    #new_sg_item["image"] = self.get_perforce_image()
+            for key, fstat in fstat_dict.items():
+                depot_file = fstat.get("depotFile", "")
+                head_rev = int(fstat.get("headRev", 0))
 
-                    # self._log_debug(">>>>>>>>>> new_sg_item: {}".format(new_sg_item))
-                    sg_data.append(new_sg_item)
-            """
+                if depot_file and head_rev == highest_revs.get(depot_file):
+                    if not fstat.get('Published', False):
+
+                        new_sg_item = fstat
+                        # new_sg_item["Published"] = True
+                        new_sg_item["source"] = "Perforce"
+                        # new_sg_item["type"] = "Perforce"
+                        new_sg_item["type"] = "Asset"
+                        # new_sg_item["type"] = "depotFile"
+                        new_sg_item["sg_status_list"] = "Needs Publishing"
+                        new_sg_item["entity"] = {'id': 14456, 'name': 'BigPalm_SM_Jackson', 'type': 'Asset'}
+                        id += 1
+                        new_sg_item["id"] = id
+
+                        new_sg_item["path"] = {"local_path": fstat.get('clientFile', None)}
+                        # new_sg_item["path"] = {"local_path": fstat.get('depotFile', None)}
+                        file_base_name = os.path.basename(fstat.get('clientFile', None))
+                        new_sg_item["name"] = file_base_name
+                        head_rev = fstat.get('headRev', "0")
+                        have_rev = fstat.get('haveRev', "0")
+                        new_sg_item["revision"] = "{}/{}".format(have_rev, head_rev)
+                        #new_sg_item["version_number"] = int(head_rev)
+                        new_sg_item["code"] = "{}#{}".format(file_base_name, head_rev)
+                        file_type_name = self._get_publish_type(file_base_name)
+                        new_sg_item["file_type_name"] = file_type_name
+                        id += 1
+                        #new_sg_item["published_file_type"] = {'id': id, 'name': file_type_name,'type': 'PublishedFileType'}
+
+                        new_sg_item["description"] = fstat.get('desc', None)
+                        new_sg_item["created_at"] = fstat.get('headTime', None)
+                        #new_sg_item["project"] = self._entity.get("project", None) if self._entity else None
+                        #new_sg_item["task"] = self._entity.get("task", None) if self._entity else None
+                        new_sg_item["sg_p4_depo_path"] = fstat.get('depotFile', None)
+
+                        #new_sg_item["image"] = self.get_perforce_image()
+
+                        # self._log_debug(">>>>>>>>>> new_sg_item: {}".format(new_sg_item))
+                        sg_data.append(new_sg_item)
+
+            self._log_debug("--------------------------------------------------------------------------------")
             self._log_debug(">>>>>>>>>> sg_data: ")
             for i, sg_item in enumerate(sg_data):
+
+                local_path = sg_item.get("path", {}).get("local_path", "")
+                if query in local_path:
+                    self._log_debug("-------------------------------")
+
+                    self._log_debug(">>> FOUND query: {} in local_path: {}".format(query, local_path))
+                    for key, value in sg_item.items():
+                        self._log_debug(">>> {}: {}".format(key, value))
+
+
+
+            """
+            self._log_debug("--------------------------------------------------------------------------------")
+            self._log_debug(">>>>>>>>>> sg_data: ")
+            for i, sg_item in enumerate(sg_data):
+                self._log_debug("-------------------------------")
                 for key, value in sg_item.items():
                     self._log_debug(">>> {}: {}".format(key, value))
             """
+
 
 
 

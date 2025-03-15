@@ -62,6 +62,10 @@ keys:
         type: str
         choices: {'ma':'Maya Ascii (.ma)', 'mb':'Maya Binary (.mb)'}
         default: ma
+    houdini_extension:
+        type: str
+        choices: { 'hip': 'Houdini file (.hip)', 'hipnc': 'Houdini file (.hipnc)' , 'hiplc': 'Houdini file (.hiplc)' }
+        default: hip
 
 
 paths:
@@ -115,13 +119,13 @@ paths:
     # Shot pipeline - houdini publishing and snapshotting locations
 
     # The location of WIP hip files
-    houdini_shot_work: sequences/{Sequence}/{Shot}/{Step}/work/{name_alpha}.v{version}.hip
+    houdini_shot_work: sequences/{Sequence}/{Shot}/{Step}/work/{name_alpha}.v{version}.{houdini_extension}
 
     # The location of backups of WIP hip files
-    houdini_shot_snapshot: sequences/{Sequence}/{Shot}/{Step}/work/snapshots/{name}.v{version}.{timestamp}.hip
+    houdini_shot_snapshot: sequences/{Sequence}/{Shot}/{Step}/work/snapshots/{name}.v{version}.{timestamp}.{houdini_extension}
 
     # The location of published hip files
-    houdini_shot_publish: sequences/{Sequence}/{Shot}/{Step}/publish/{name}.v{version}.hip
+    houdini_shot_publish: sequences/{Sequence}/{Shot}/{Step}/publish/{name}.v{version}.{houdini_extension}
 
 
 
@@ -169,13 +173,13 @@ paths:
     # Asset pipeline - Houdini hip files
 
     # The location of WIP hip files
-    houdini_asset_work: assets/{sg_asset_type}/{Asset}/{Step}/work/{name_alpha}.v{version}.hip
+    houdini_asset_work: assets/{sg_asset_type}/{Asset}/{Step}/work/{name_alpha}.v{version}.{houdini_extension}
 
     # The location of backups of WIP hip files
-    houdini_asset_snapshot: assets/{sg_asset_type}/{Asset}/{Step}/work/snapshots/{name_alpha}.v{version}.{timestamp}.hip
+    houdini_asset_snapshot: assets/{sg_asset_type}/{Asset}/{Step}/work/snapshots/{name_alpha}.v{version}.{timestamp}.{houdini_extension}
 
     # The location of published hip files
-    houdini_asset_publish: assets/{sg_asset_type}/{Asset}/{Step}/publish/{name_alpha}.v{version}.hip
+    houdini_asset_publish: assets/{sg_asset_type}/{Asset}/{Step}/publish/{name_alpha}.v{version}.{houdini_extension}
 
 
 strings:
