@@ -492,7 +492,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                                 # sg_item["newAction"] = None
                                 #if sg_item.get("version_number", 0) == 0:
                                 #    sg_item["version_number"] = int(head_rev)
-
+            """
             query = "Helena_LC_BangsReduced_TEK"
             self._log_debug("------------------------------------------------------------------------------------")
             for i, sg_item in enumerate(sg_data):
@@ -518,7 +518,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                     self._log_debug(">>>>>>>>>>fstat ")
                     for key, value in fstat.items():
                         self._log_debug(">>> {}: {}".format(key, value))
-
+            
 
             repo_root = os.path.normpath(
                 os.path.join(os.path.dirname(__file__), "..", "..")
@@ -527,7 +527,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
             perforce_publish_image_path = os.path.join(repo_root, "icons/perforce_1.png")
             self._log_debug(">>>>>>>>>> perforce_publish_image_path: {}".format(perforce_publish_image_path))
             perforce_publish_icon = QIcon(QPixmap(perforce_publish_image_path))
-
+            """
             id = 9999000
 
             # Step 1: Find the highest headRev for each unique file
@@ -584,7 +584,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
 
                         # self._log_debug(">>>>>>>>>> new_sg_item: {}".format(new_sg_item))
                         sg_data.append(new_sg_item)
-
+            """
             self._log_debug("--------------------------------------------------------------------------------")
             self._log_debug(">>>>>>>>>> sg_data: ")
             for i, sg_item in enumerate(sg_data):
@@ -597,9 +597,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                     for key, value in sg_item.items():
                         self._log_debug(">>> {}: {}".format(key, value))
 
-
-
-            """
+            
             self._log_debug("--------------------------------------------------------------------------------")
             self._log_debug(">>>>>>>>>> sg_data: ")
             for i, sg_item in enumerate(sg_data):
