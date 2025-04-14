@@ -652,55 +652,58 @@ class ShotgunModel(ShotgunQueryModel):
         :param :class:`~PySide.QtGui.QStandardItem` item: Model item to update
         :param :class:`ShotgunItemData` data_item: Data to update item with
         """
+        try:
+            field_display_name = self.__generate_display_name(
+                data_item.field, data_item.shotgun_data
+            )
+            item.setText(field_display_name)
 
-        field_display_name = self.__generate_display_name(
-            data_item.field, data_item.shotgun_data
-        )
-        item.setText(field_display_name)
+            # keep tabs of which items we are creating
+            item.setData(True, self.IS_SG_MODEL_ROLE)
 
-        # keep tabs of which items we are creating
-        item.setData(True, self.IS_SG_MODEL_ROLE)
+            # flag if item has children, for the fetchMore functionality
+            item.setData(not data_item.is_leaf(), self._SG_ITEM_HAS_CHILDREN)
 
-        # flag if item has children, for the fetchMore functionality
-        item.setData(not data_item.is_leaf(), self._SG_ITEM_HAS_CHILDREN)
+            # transfer a unique id from the data backend so we can
+            # refer back to this node later on
+            item.setData(data_item.unique_id, self._SG_ITEM_UNIQUE_ID)
 
-        # transfer a unique id from the data backend so we can
-        # refer back to this node later on
-        item.setData(data_item.unique_id, self._SG_ITEM_UNIQUE_ID)
-
-        # store the actual value we have
-        item.setData(
-            {"name": data_item.field, "value": data_item.shotgun_data[data_item.field]},
-            self.SG_ASSOCIATED_FIELD_ROLE,
-        )
-
-        if data_item.is_leaf():
-            # this is the leaf level!
-            # attach the shotgun data so that we can access it later
-            # note: Qt automatically changes everything to be unicode
-            # according to strange rules of its own, so force convert
-            # all shotgun values to be proper unicode prior to setData
+            # store the actual value we have
             item.setData(
-                sanitize_for_qt_model(data_item.shotgun_data), self.SG_DATA_ROLE
+                {"name": data_item.field, "value": data_item.shotgun_data[data_item.field]},
+                self.SG_ASSOCIATED_FIELD_ROLE,
             )
 
-        # Now we got the object set up. Now start calling custom methods:
+            if data_item.is_leaf():
+                # this is the leaf level!
+                # attach the shotgun data so that we can access it later
+                # note: Qt automatically changes everything to be unicode
+                # according to strange rules of its own, so force convert
+                # all shotgun values to be proper unicode prior to setData
+                item.setData(
+                    sanitize_for_qt_model(data_item.shotgun_data), self.SG_DATA_ROLE
+                )
 
-        # allow item customization prior to adding to model
-        # note: this now runs both on update and create, which may be
-        #       conceptually confusing.
-        self._item_created(item)
+            # Now we got the object set up. Now start calling custom methods:
 
-        # set up default thumb
-        self._populate_default_thumbnail(item)
+            # allow item customization prior to adding to model
+            # note: this now runs both on update and create, which may be
+            #       conceptually confusing.
+            self._item_created(item)
 
-        # run the populate item method
-        if data_item.is_leaf():
-            self._populate_item(item, data_item.shotgun_data)
-        else:
-            self._populate_item(item, None)
+            # set up default thumb
+            self._populate_default_thumbnail(item)
 
-        self._set_tooltip(item, data_item.shotgun_data)
+            # run the populate item method
+            if data_item.is_leaf():
+                self._populate_item(item, data_item.shotgun_data)
+            else:
+                self._populate_item(item, None)
+
+            self._set_tooltip(item, data_item.shotgun_data)
+        except Exception as e:
+            self._log_debug(f"Unable to update item, error: {e}")
+
 
     ########################################################################################
     # private methods

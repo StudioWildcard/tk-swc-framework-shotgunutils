@@ -244,7 +244,10 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
 
         # Get perforce data
         self._log_debug(">>>> data_handler_find->update_date: sg data type is {}".format(self.__sg_data_type))
-        if self.__sg_data_type == "Asset" or self.__sg_data_type == "Task":
+        #self._log_debug(f">>>> sg_data type is {self.__sg_data_type}")
+        #self._log_debug(f">>>> sg_data is {sg_data}")
+        #if self.__sg_data_type == "Asset" or self.__sg_data_type == "Task":
+        if sg_data:
 
             if not self._p4:
                 self._connect_P4()
