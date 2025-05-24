@@ -414,6 +414,38 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
         """"
         Get large perforce data
         """
+
+        """
+        if sg_data:
+            # Step 1: Filter sg_data to keep only the highest version_number for each file
+            filtered_sg_data = []
+            file_version_map = defaultdict(list)
+
+            # Group sg_data by file name (local_path)
+            for sg_item in sg_data:
+                sg_item_path = sg_item.get("path", {})
+                local_path = sg_item_path.get("local_path", None)
+                if local_path:
+                    file_version_map[local_path].append(sg_item)
+
+            # Keep only the item with the highest version_number for each file
+            for local_path, items in file_version_map.items():
+                if len(items) > 1:
+                    # Sort by version_number (descending) and take the first item
+                    highest_version_item = max(
+                        items,
+                        key=lambda x: x.get("version_number", 0),
+                        default=items[0]
+                    )
+                    filtered_sg_data.append(highest_version_item)
+                    self._log_debug(
+                        f"Keeping highest version for {local_path}: version_number={highest_version_item.get('version_number', 0)}"
+                    )
+                else:
+                    filtered_sg_data.append(items[0])
+
+            sg_data = filtered_sg_data
+        """
         item_path_dict = defaultdict(int)
         fstat_dict = {}
         if sg_data:
@@ -533,6 +565,46 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
             """
             id = 9999000
 
+            # Step 1: Find the highest headRev for each unique local_path
+            highest_revs = {}
+            fstat_by_local_path = {}
+            for key, fstat in fstat_dict.items():
+                depot_file = fstat.get("depotFile", "")
+                local_path = fstat.get("clientFile", "")
+                head_rev = int(fstat.get("headRev", 0))
+                if local_path:
+                    if local_path not in highest_revs or head_rev > highest_revs[local_path]["head_rev"]:
+                        highest_revs[local_path] = {"head_rev": head_rev, "key": key}
+                        fstat_by_local_path[local_path] = fstat
+
+            # Step 2: Process only the highest revision files
+            for local_path, fstat in fstat_by_local_path.items():
+                key = highest_revs[local_path]["key"]
+                head_rev = highest_revs[local_path]["head_rev"]
+                if not fstat.get('Published', False):
+                    new_sg_item = fstat
+                    new_sg_item["source"] = "Perforce"
+                    new_sg_item["type"] = "Asset"
+                    new_sg_item["sg_status_list"] = "Needs Publishing"
+                    new_sg_item["entity"] = {'id': 14456, 'name': 'BigPalm_SM_Jackson', 'type': 'Asset'}
+                    new_sg_item["id"] = id
+                    id += 1
+                    new_sg_item["path"] = {"local_path": local_path}
+                    file_base_name = os.path.basename(local_path)
+                    new_sg_item["name"] = file_base_name
+                    have_rev = fstat.get('haveRev', "0")
+                    new_sg_item["revision"] = "{}/{}".format(have_rev, head_rev)
+                    new_sg_item["code"] = "{}#{}".format(file_base_name, head_rev)
+                    file_type_name = self._get_publish_type(file_base_name)
+                    new_sg_item["file_type_name"] = file_type_name
+                    new_sg_item["description"] = fstat.get('desc', None)
+                    new_sg_item["created_at"] = fstat.get('headTime', None)
+                    new_sg_item["sg_p4_depo_path"] = fstat.get('depotFile', None)
+                    sg_data.append(new_sg_item)
+
+            """
+            id = 9999000
+
             # Step 1: Find the highest headRev for each unique file
             highest_revs = {}
             for key, fstat in fstat_dict.items():
@@ -587,6 +659,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
 
                         # self._log_debug(">>>>>>>>>> new_sg_item: {}".format(new_sg_item))
                         sg_data.append(new_sg_item)
+            """
             """
             self._log_debug("--------------------------------------------------------------------------------")
             self._log_debug(">>>>>>>>>> sg_data: ")
