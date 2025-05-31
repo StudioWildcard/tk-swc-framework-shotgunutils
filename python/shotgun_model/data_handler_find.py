@@ -563,6 +563,9 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
             self._log_debug(">>>>>>>>>> perforce_publish_image_path: {}".format(perforce_publish_image_path))
             perforce_publish_icon = QIcon(QPixmap(perforce_publish_image_path))
             """
+
+            """
+            # Removed because they are not linked to asset
             id = 9999000
 
             # Step 1: Find the highest headRev for each unique local_path
@@ -601,6 +604,9 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                     new_sg_item["created_at"] = fstat.get('headTime', None)
                     new_sg_item["sg_p4_depo_path"] = fstat.get('depotFile', None)
                     sg_data.append(new_sg_item)
+            # END OF "Removed because they are not linked to asset"
+                    
+            """
 
             """
             id = 9999000
