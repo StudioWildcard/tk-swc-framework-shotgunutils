@@ -289,28 +289,29 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
                     )
 
                     # now check with prev data structure to see if it has changed
-                    if not self._cache.item_exists(unique_field_value):
-                        # this is a new node that wasn't there before
-                        diff_list.append(
-                            {
-                                "data": new_cache.get_entry_by_uid(unique_field_value),
-                                "mode": self.ADDED,
-                            }
-                        )
-                        num_adds += 1
-                    else:
-                        # record already existed in prev dataset. Check if value has changed
-                        old_record = self._cache.get_shotgun_data(unique_field_value)
-                        if not compare_shotgun_data(old_record, sg_item):
+                    if self._cache:
+                        if not self._cache.item_exists(unique_field_value):
+                            # this is a new node that wasn't there before
                             diff_list.append(
                                 {
-                                    "data": new_cache.get_entry_by_uid(
-                                        unique_field_value
-                                    ),
-                                    "mode": self.UPDATED,
+                                    "data": new_cache.get_entry_by_uid(unique_field_value),
+                                    "mode": self.ADDED,
                                 }
                             )
-                            num_modifications += 1
+                            num_adds += 1
+                        else:
+                            # record already existed in prev dataset. Check if value has changed
+                            old_record = self._cache.get_shotgun_data(unique_field_value)
+                            if not compare_shotgun_data(old_record, sg_item):
+                                diff_list.append(
+                                    {
+                                        "data": new_cache.get_entry_by_uid(
+                                            unique_field_value
+                                        ),
+                                        "mode": self.UPDATED,
+                                    }
+                                )
+                                num_modifications += 1
 
                 else:
                     # not on leaf level yet
