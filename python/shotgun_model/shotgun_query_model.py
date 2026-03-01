@@ -297,6 +297,20 @@ class ShotgunQueryModel(QtGui.QStandardItemModel):
             self.blockSignals(signals_blocked)
             self.modelReset.emit()
 
+    def set_prefetched_fstat_dict(self, fstat_dict):
+        """Supply pre-fetched P4 fstat data to the underlying data handler so
+        that the next ``update_data`` call can skip its synchronous P4 query.
+
+        This is safe to call at any time. If no data handler is loaded yet the
+        call is silently ignored — the dict will not be available and the
+        handler will fall back to its normal P4 query.
+
+        :param dict fstat_dict: Mapping produced by a background P4 query, or
+            ``None`` to clear any previously set data.
+        """
+        if self._data_handler is not None and hasattr(self._data_handler, "set_prefetched_fstat_dict"):
+            self._data_handler.set_prefetched_fstat_dict(fstat_dict)
+
     def is_data_cached(self):
         """
         Determine if the model has any cached data.

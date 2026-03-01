@@ -84,6 +84,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
         self._sg_data = None
         self._p4 = None
         self._peforce_data = {}
+        self._prefetched_fstat_dict = None
         self.status_dict = {
             "add": "p4add",
             "move/add": "p4add",
@@ -249,7 +250,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
         #if self.__sg_data_type == "Asset" or self.__sg_data_type == "Task":
         if sg_data:
 
-            if not self._p4:
+            if not self._p4 and self._prefetched_fstat_dict is None:
                 self._connect_P4()
             sg_data = self._get_peforce_data(sg_data)
 
@@ -399,6 +400,20 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
 
         return diff_list
 
+    def set_prefetched_fstat_dict(self, fstat_dict):
+        """Supply pre-fetched fstat data so that update_data can skip its own
+        P4 query. The dict is consumed once and then cleared.
+
+        This is the async-friendly entry point: callers that already ran
+        ``p4.run_fstat`` in a background thread can pass the results here
+        before triggering the model refresh, avoiding a duplicate (and
+        blocking) P4 round-trip inside ``update_data``.
+
+        :param dict fstat_dict: Mapping of ``key#rev`` → fstat dict, as built
+            by ``PerforceSyncManager.create_key``. Pass ``None`` to clear.
+        """
+        self._prefetched_fstat_dict = fstat_dict
+
     def _get_peforce_data(self, sg_data):
         if sg_data:
             """
@@ -447,54 +462,46 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
 
             sg_data = filtered_sg_data
         """
-        item_path_dict = defaultdict(int)
-        fstat_dict = {}
-        if sg_data:
-            for i, sg_item in enumerate(sg_data):
-                #if i == 0:
-                #    self._log_debug("sg_item is: {}".format(sg_item))
-                sg_item_path = sg_item.get("path", None)
-                if sg_item_path:
-                    if "local_path" in sg_item_path:
-                        local_path = sg_item_path.get("local_path", None)
+        # Use prefetched fstat data if the caller already queried P4 in a
+        # background thread, otherwise fall back to a synchronous P4 query.
+        if self._prefetched_fstat_dict is not None:
+            self._log_debug("Using prefetched fstat_dict (%d entries) — skipping P4 query" % len(self._prefetched_fstat_dict))
+            fstat_dict = self._prefetched_fstat_dict
+            self._prefetched_fstat_dict = None  # consume once
+        else:
+            item_path_dict = defaultdict(int)
+            fstat_dict = {}
+            if sg_data:
+                for i, sg_item in enumerate(sg_data):
+                    sg_item_path = sg_item.get("path", None)
+                    if sg_item_path:
+                        if "local_path" in sg_item_path:
+                            local_path = sg_item_path.get("local_path", None)
 
-                        if local_path:
-                            # self._log_debug("local_path is: {}".format(local_path))
-                            # item_path = self._get_item_path(local_path)
-                            item_path = os.path.dirname(local_path)
-                            item_path_dict[item_path] += 1
-            #self._log_debug(">>>>>>>>>>  item_path_dict is: {}".format(item_path_dict))
+                            if local_path:
+                                item_path = os.path.dirname(local_path)
+                                item_path_dict[item_path] += 1
 
-            for key in item_path_dict:
-                if key:
-                    # self._log_debug(">>>>>>>>>>  key is: {}".format(key))
-                    #key = "{}\\...".format(key)
-                    key = key.rstrip('/')
-                    # self._log_debug("^^^ key is: {}".format(key))
-                    fstat_list = self._p4.run_fstat('-Of', key + '/...')
-                    # fstat_list = self._p4.run("fstat", key)
-                    for i, fstat in enumerate(fstat_list):
-                        client_file = fstat.get('clientFile', None)
-                        # if i == 0:
-                        #    self._log_debug(">>>>>>>>>>  client_file is: {}".format(client_file))
-                        if client_file:
-                            have_rev = fstat.get('haveRev', "0")
-                            head_rev = fstat.get('headRev', "0")
-                            key = self._create_key(client_file)
-                            key = "{}#{}".format(key, head_rev)
-                            if key not in fstat_dict:
+                for key in item_path_dict:
+                    if key:
+                        key = key.rstrip('/')
+                        fstat_list = self._p4.run_fstat('-Of', key + '/...')
+                        for i, fstat in enumerate(fstat_list):
+                            client_file = fstat.get('clientFile', None)
+                            if client_file:
+                                have_rev = fstat.get('haveRev', "0")
+                                head_rev = fstat.get('headRev', "0")
+                                key = self._create_key(client_file)
+                                key = "{}#{}".format(key, head_rev)
+                                if key not in fstat_dict:
 
-                                fstat_dict[key] = fstat
-                                fstat_dict[key]['Published'] = False
-                                action = fstat.get('action', None)
-                                if action:
-                                    sg_status = self._get_p4_status(action)
-                                    if sg_status:
-                                        fstat_dict[key]['sg_status_list'] = sg_status
-
-                                # if i == 0:
-                                #     self._log_debug(">>>>>>>>>>  fstat_dict[client_file] is: {}".format(fstat_dict[modified_client_file]))
-            # self._log_debug(">>>>>>>>>>  fstat_dict is: {}".format(fstat_dict))
+                                    fstat_dict[key] = fstat
+                                    fstat_dict[key]['Published'] = False
+                                    action = fstat.get('action', None)
+                                    if action:
+                                        sg_status = self._get_p4_status(action)
+                                        if sg_status:
+                                            fstat_dict[key]['sg_status_list'] = sg_status
 
             for i, sg_item in enumerate(sg_data):
                 sg_item_path = sg_item.get("path", None)
