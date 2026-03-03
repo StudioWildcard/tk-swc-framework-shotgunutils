@@ -21,8 +21,6 @@ from .shotgun_standard_item import ShotgunStandardItem
 from .shotgun_query_model import ShotgunQueryModel
 from .data_handler_find import ShotgunFindDataHandler
 from .util import get_sanitized_data, get_sg_data, sanitize_for_qt_model
-from tank_vendor.six.moves import range
-from tank_vendor import six
 
 class ShotgunModel(ShotgunQueryModel):
     """
@@ -295,16 +293,16 @@ class ShotgunModel(ShotgunQueryModel):
 
     def __compute_cache_path(self, cache_seed=None):
         params_hash = hashlib.md5()
-        params_hash.update(six.ensure_binary(str(self.__schema_generation)))
-        params_hash.update(six.ensure_binary(str(self.__fields)))
-        params_hash.update(six.ensure_binary(str(self.__order)))
-        params_hash.update(six.ensure_binary(str(self.__hierarchy)))
+        params_hash.update(str(self.__schema_generation).encode("utf-8"))
+        params_hash.update(str(self.__fields).encode("utf-8"))
+        params_hash.update(str(self.__order).encode("utf-8"))
+        params_hash.update(str(self.__hierarchy).encode("utf-8"))
         if QtCore.Qt.UserRole != 32:
-            params_hash.update(six.ensure_binary(str(QtCore.Qt.UserRole)))
+            params_hash.update(str(QtCore.Qt.UserRole).encode("utf-8"))
         filter_hash = hashlib.md5()
-        filter_hash.update(six.ensure_binary(str(self.__filters)))
-        filter_hash.update(six.ensure_binary(str(self.__additional_filter_presets)))
-        params_hash.update(six.ensure_binary(str(cache_seed)))
+        filter_hash.update(str(self.__filters).encode("utf-8"))
+        filter_hash.update(str(self.__additional_filter_presets).encode("utf-8"))
+        params_hash.update(str(cache_seed).encode("utf-8"))
         if hasattr(self._bundle, "site_cache_location"):
             cache_location = self._bundle.site_cache_location
         else:

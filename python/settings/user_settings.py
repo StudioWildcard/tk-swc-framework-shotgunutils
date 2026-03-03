@@ -8,8 +8,9 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+import urllib.parse
+
 import sgtk
-from tank_vendor import six
 from sgtk.platform.qt import QtCore
 from sgtk import TankError
 from ..shotgun_model import sanitize_qt
@@ -49,7 +50,7 @@ class UserSettings(object):
         # now organize various keys
 
         # studio level settings - base it on the server host name
-        _, sg_hostname, _, _, _ = six.moves.urllib.parse.urlsplit(
+        _, sg_hostname, _, _, _ = urllib.parse.urlsplit(
             self.__fw.sgtk.shotgun_url
         )
         self.__site_key = sg_hostname
@@ -151,7 +152,7 @@ class UserSettings(object):
             if pickle_setting:
                 # Only sanitize and pickle the raw value if indicated.
                 sanitized_value = sanitize_qt(value)
-                settings_value = six.ensure_str(sgtk.util.pickle.dumps(sanitized_value))
+                settings_value = sgtk.util.pickle.dumps(sanitized_value)
             else:
                 # Store the raw value. Some objects cannot be retrieved correctly after
                 # sanitizing, like QByteArray.
@@ -186,10 +187,10 @@ class UserSettings(object):
 
             if raw_value is None:
                 resolved_val = default
-            elif is_setting_pickled and isinstance(raw_value, six.string_types):
+            elif is_setting_pickled and isinstance(raw_value, str):
                 # Unpickle the raw value if it was hinted that the settings raw value was
                 # pickled before storing it, and the raw value is a string.
-                resolved_val = sgtk.util.pickle.loads(six.ensure_binary(raw_value))
+                resolved_val = sgtk.util.pickle.loads(raw_value)
                 resolved_val = sanitize_qt(resolved_val)
             else:
                 # Do not unpickle the raw value, either it was hinted that the raw value
