@@ -16,14 +16,8 @@ import errno
 import inspect
 import traceback
 
-# Until we remove the use of imp from this code,
-# we must suppress the warning here as it will pop up in the Shotgun browser
-# integration as a message box, when running in Python 3.4 >.
-import warnings
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    import imp
+# FPT 3.0 / Python 3.13: `imp` was removed in Python 3.12; use importlib instead (SG-15664).
+import importlib.util
 
 
 # handle imports
@@ -252,12 +246,12 @@ def _import_py_file(python_path, name):
     :param str name: name of py file (without extension)
     :returns: Python object
     """
-    mfile, pathname, description = imp.find_module(name, [python_path])
-    try:
-        module = imp.load_module(name, mfile, pathname, description)
-    finally:
-        if mfile:
-            mfile.close()
+    module_path = os.path.join(python_path, "%s.py" % name)
+    spec = importlib.util.spec_from_file_location(name, module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError("Could not find module %s at %s" % (name, module_path))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     return module
 
 
